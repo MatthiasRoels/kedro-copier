@@ -1,13 +1,50 @@
-repos:
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.3.0
-  hooks:
-  - id: check-added-large-files
-  - id: check-merge-conflict
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
 
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.3.2
-  hooks:
-    - id: ruff
-      args: [ --fix, --exit-non-zero-on-fix ]
-    - id: ruff-format
+default_stages: [pre-commit, manual]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml # Checks yaml files for parseable syntax.
+      - id: check-json # Checks json files for parseable syntax.
+      - id: check-added-large-files
+      - id: check-case-conflict # Check for files that would conflict in case-insensitive filesystems
+      - id: check-merge-conflict # Check for files that contain merge conflict strings.
+      - id: debug-statements # Check for debugger imports and py37+ `breakpoint()` calls in python source.
+      - id: fix-byte-order-marker # Removes UTF-8 byte order marker
+      - id: check-ast
+
+  # linting checks using ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.4
+    hooks:
+      - id: ruff-format
+        name: "ruff format on src/, tests/"
+        files: "^src/"
+      - id: ruff
+        name: "ruff on src/, tests/"
+        args: ["--fix", "--exit-non-zero-on-fix"]
+        files: "^src/"
+  
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.19.1
+    hooks:
+    - id: pyupgrade
+      args: ["--py311-plus"]
+
+  # ensure uv.lock is up-to-date  
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    # uv version.
+    rev: 0.6.17
+    hooks:
+      - id: uv-lock
+
+  # Ensure commit messages follow a predefined pattern
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1
+    hooks:
+      - id: gitlint

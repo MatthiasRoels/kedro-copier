@@ -8,6 +8,14 @@ include_local_data:
   help: Include local data directories?
   type: bool
   default: false
+include_mlflow_hooks:
+  help: Include MLflow hooks for experiment tracking?
+  type: bool
+  default: false
+include_pandera_hooks:
+  help: Include Pandera hooks for data validation?
+  type: bool
+  default: false
 
 _tasks:
   - "git init"

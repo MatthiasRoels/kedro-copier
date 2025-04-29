@@ -1,0 +1,116 @@
+"""Pandera global hooks that should be implemented pipeline or nodes globaly for e.g
+to check that every saved dataset is not empty otherwise throw error.
+"""
+
+import importlib
+import logging
+from typing import Any
+
+import pandas as pd
+import polars as pl
+from kedro.framework.hooks import hook_impl
+from kedro.io import DataCatalog
+from kedro.pipeline import Pipeline
+
+
+logger = logging.getLogger(__name__)
+
+
+class PanderaHooks:
+    """Class for pandera hooks that dynamically apply generic common validation
+    checks on all datasets unless instructed not to, as well as dataset specific
+    validation checks.
+    """
+
+    def __init__(self):
+        self.dataset_schemas = {}
+        self.pipeline_inputs = {}
+
+    @hook_impl
+    def after_catalog_created(
+        self,
+        catalog: DataCatalog,
+    ):
+        """Create a mapping of dataset names to schema classes after the catalog is
+        created.
+        """
+        for dataset_name, dataset in catalog._datasets.items():
+            try:
+                has_schema_validation = False
+                schema_class_path = dataset.metadata.get("validation_schema")
+                module_name, class_name = schema_class_path.rsplit(".", 1)
+                # once rsplit returns a value, it is certain a validation_schema was provided for {dataset_name}
+                has_schema_validation = True
+                validation_schema_module = importlib.import_module(module_name)
+                validation_schema_class = getattr(validation_schema_module, class_name)
+                self.dataset_schemas[dataset_name] = validation_schema_class
+            except AttributeError as e:
+                # throws AttributeError when validation_schema was provided but was unable to load pandera class,
+                # caused by errors in thePandera check.
+                if has_schema_validation:
+                    raise AttributeError(
+                        f"failed to load Pandera check: {schema_class_path}. Verify the pandera check is valid."
+                    ) from e
+                else:
+                    # for params inputs & datasets metadata without validation_schema
+                    pass
+
+    @hook_impl
+    def before_pipeline_run(self, pipeline: Pipeline) -> None:
+        """Hook implementation for storing a Set of all "free" input datasets used in
+        this pipeline.
+        """
+        if pipeline:
+            self.pipeline_inputs = pipeline.inputs()
+
+    @hook_impl
+    def after_dataset_loaded(self, dataset_name: str, data: Any) -> None:
+        """
+        Hook implementation for validating the loaded datasets using pandera if
+        a pandera model is defined for the corresponding dataset.
+        """
+        if dataset_name in self.pipeline_inputs:
+            # We remove the dataset name from the not_validated_inputs to
+            # avoid running a single validation multiple times.
+            # This can happen in cases when a free input is used in several nodes.
+            self.pipeline_inputs.remove(dataset_name)
+            self._run_validation(dataset_name, data)
+
+    @hook_impl
+    def before_dataset_saved(
+        self,
+        dataset_name: str,
+        data: Any,
+    ):
+        """Hook implementation for validating a dataset created by a node
+        before the dataset is actually saved.
+        """
+        self._run_validation(dataset_name, data, True)
+
+    def _run_validation(self, dataset_name: str, data: Any, saving: bool = False):
+        """Running pandera validation checks on a given dataset."""
+        if dataset_name in self.dataset_schemas:
+            # Check wether function was called from the before_dataset_saved hook
+            if saving:
+                logger.info(
+                    f"Validating using {self.dataset_schemas[dataset_name]} before saving {dataset_name} dataset"
+                )
+            else:
+                logger.info(
+                    f"Validating using {self.dataset_schemas[dataset_name]} after loading {dataset_name} dataset"
+                )
+            # pandas/polars automatically raises an error
+            if isinstance(data, pd.DataFrame):
+                try:
+                    self.dataset_schemas[dataset_name].validate(data)
+                except Exception as exc:
+                    raise RuntimeError(
+                        f"Pandera error for dataset: {dataset_name}"
+                    ) from exc
+            elif isinstance(data, (pl.DataFrame, pl.LazyFrame)):
+                try:
+                    self.dataset_schemas[dataset_name].validate(data.lazy().collect())
+                except Exception as exc:
+                    raise RuntimeError(
+                        f"Pandera error for dataset: {dataset_name}"
+                    ) from exc
