@@ -6,13 +6,12 @@ https://docs.kedro.org/en/stable/kedro_project_setup/settings.html.
 import polars as pl
 from kedro.config import OmegaConfigLoader
 from omegaconf.resolvers import oc
-
-{%- if include_mlflow_hooks -%}
+{% if include_mlflow_hooks %}
 from {{ package_name }}.mlflow_hooks import MlflowHooks
-{%- endif -%}
-{%- if include_pandera_hooks -%}
+{%- endif %}
+{%- if include_pandera_hooks %}
 from {{ package_name }}.pandera_hooks import PanderaHooks
-{%- endif -%}
+{%- endif %}
 
 # Instantiate and list your project hooks here
 {%- if include_mlflow_hooks and include_pandera_hooks %}
@@ -21,6 +20,8 @@ HOOKS = (MlflowHook(), PanderaHooks())
 HOOKS = (MlflowHook(),)
 {%- elif include_pandera_hooks %}
 HOOKS = (PanderaHooks(),)
+{%- else %}
+# HOOKS = (ProjectHooks(),)
 {%- endif %}
 
 # List the installed plugins for which to disable auto-registry
@@ -50,9 +51,9 @@ CONFIG_LOADER_ARGS = {
             "*/parameters*",
             "**/parameters*",
         ],
-        {%- if include_mlflow_hooks -%}
+        {%- if include_mlflow_hooks %}
         "mlflow": ["mlflow*", "mlflow*/**", "**/mlflow*"],
-        {%- endif -% }
+        {%- endif %}
         # Note: for globals, we use the default e.g. "globals": ["globals.yml"],
     },
     "custom_resolvers": {

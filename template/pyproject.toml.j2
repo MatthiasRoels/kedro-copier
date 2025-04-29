@@ -5,6 +5,12 @@ requires-python = ">=3.10"
 description = "{{ short_description }}"
 dependencies = [
     "kedro>=0.19.12",
+    {%- if include_mlflow_hooks %}
+    "mlflow-skinny>=2.21.2",
+    {%- endif %}
+    {%- if include_pandera_hooks %}
+    "pandera[polars]>=0.23.1",
+    {%- endif %}
 ]
 dynamic = ["version"]
 
