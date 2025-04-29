@@ -159,7 +159,7 @@ exclude_lines = [ "pragma: no cover", "raise NotImplementedError",]
 
 [tool.coverage.run]
 omit = [
-    # exclude schemas 
+    # exclude schemas
     "src/{{ package_name }}/library/schemas/*",
     # kedro project template code
     "src/{{ package_name }}/__main__.py",

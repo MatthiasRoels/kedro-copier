@@ -29,14 +29,14 @@ repos:
         name: "ruff on src/, tests/"
         args: ["--fix", "--exit-non-zero-on-fix"]
         files: "^src/"
-  
+
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.19.1
     hooks:
     - id: pyupgrade
       args: ["--py311-plus"]
 
-  # ensure uv.lock is up-to-date  
+  # ensure uv.lock is up-to-date
   - repo: https://github.com/astral-sh/uv-pre-commit
     # uv version.
     rev: 0.6.17
