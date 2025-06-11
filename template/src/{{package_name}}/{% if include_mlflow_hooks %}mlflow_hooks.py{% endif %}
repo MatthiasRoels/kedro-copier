@@ -5,8 +5,8 @@ import mlflow
 from kedro.framework.context import KedroContext
 from kedro.framework.hooks import hook_impl
 from mlflow.entities import RunStatus
+from pydantic import BaseModel
 
-from kedro_mlops.library.schemas import MLflowConfig
 
 logger = logging.getLogger(__name__)
 
@@ -170,3 +170,35 @@ class MlflowHooks:
             enable = False
 
         return enable
+
+
+class MLflowServerConfig(BaseModel):
+    tracking_uri: str | None = None
+
+    class Config:
+        extra = "forbid"
+
+
+class MLflowExperiment(BaseModel):
+    name: str
+    tags: list[str] | None = None
+
+
+class MLflowRun(BaseModel):
+    # if `id` is None, a new run will be created
+    id: str | None = None
+    # if `name` is None, pipeline name will be used for the run name.
+    name: str
+
+
+class MLflowTrackingConfig(BaseModel):
+    enable_tracking: bool = False
+    # list of pipelines for which we disable tracking
+    exclude_pipelines: list = []
+    experiment: MLflowExperiment
+    run: MLflowRun | None = None
+
+
+class MLflowConfig(BaseModel):
+    server: MLflowServerConfig
+    tracking: MLflowTrackingConfig
