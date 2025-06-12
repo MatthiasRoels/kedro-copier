@@ -15,9 +15,9 @@ from {{ package_name }}.pandera_hooks import PanderaHooks
 
 # Instantiate and list your project hooks here
 {%- if include_mlflow_hooks and include_pandera_hooks %}
-HOOKS = (MlflowHook(), PanderaHooks())
+HOOKS = (MlflowHooks(), PanderaHooks())
 {%- elif include_mlflow_hooks %}
-HOOKS = (MlflowHook(),)
+HOOKS = (MlflowHooks(),)
 {%- elif include_pandera_hooks %}
 HOOKS = (PanderaHooks(),)
 {%- else %}
